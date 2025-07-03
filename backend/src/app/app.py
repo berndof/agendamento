@@ -5,6 +5,8 @@ from pathlib import Path
 from fastapi import APIRouter, FastAPI
 
 from base.app_module import AppModule
+from base.model import BaseModel
+from base.resource import BaseResource
 from config import BASE_MODULE_PATHS
 from helpers.modules import import_python_module
 
@@ -23,16 +25,15 @@ class ModuleRegistry:
     _modules: list[type[AppModule]] = []
 
     @classmethod
-    def register(cls, module: type[AppModule], api_router: APIRouter | None) -> None:
+    def register(cls, module: type[AppModule], api_router: APIRouter , module_path: str) -> None:
         """
         Registers a module with the module registry.
 
         If api_router is provided, the module's register method will be called with it.
         """
         cls._modules.append(module)
-        if api_router:
-            module.register(api_router)
-            #logger.debug(f"Registered module {module.__name__}")
+        module.register(api_router, module_path)
+        #logger.debug(f"Registered module {module.__name__}")
 
     @classmethod
     def get_modules(cls) -> list[type[AppModule]]:
@@ -59,10 +60,35 @@ class ModuleRegistry:
                 #logger.debug(f"Running seed hook for {module.__name__}")
                 await module.seed_hook()
 
+class ResourceRegistry:
+    _resources: list[type[BaseResource]] = []
+
+    @classmethod
+    def register(cls, resource: type[BaseResource], api_router: APIRouter) -> None:
+        cls._resources.append(resource)
+        resource.register(api_router)
+
+    @classmethod
+    def get_resources(cls) -> list[type[BaseResource]]:
+        return cls._resources
+
+    @classmethod
+    def get_resource_by_model(cls, model: type[BaseModel]) -> type[BaseResource] | None:
+        for resource in cls._resources:
+            if resource.model == model:
+                return resource
+        return None
+
+    @classmethod
+    def debug_resources_(cls) -> None:
+        for resource in cls._resources:
+            resource.debug_()
+        
+
 
 class App():
     def __init__(self,) -> None:
-        ...
+        self.init_fastapi()
 
     def add_router(self):
         self.fastapi_app.include_router(self.router)
@@ -72,6 +98,14 @@ class App():
         self.fastapi_app = FastAPI(lifespan=lifespan)
         self.router = APIRouter()
         return 
+
+    def load(self):
+        self.load_modules()
+        ModuleRegistry.debug_modules_()
+        self.load_resources()
+        ResourceRegistry.debug_resources_()
+        self.add_router()
+        return
 
     def load_modules(self):
         for base_path in BASE_MODULE_PATHS:
@@ -95,4 +129,41 @@ class App():
                 for attr in dir(mod):
                     obj = getattr(mod, attr)
                     if isinstance(obj, type) and issubclass(obj, AppModule) and obj is not AppModule:
-                        ModuleRegistry.register(obj, self.router)
+                        ModuleRegistry.register(obj, self.router, entry)
+
+    def load_resources(self):
+        resources_dir: set[Path] = set()
+        
+        #resources inside modules
+        loaded_modules = ModuleRegistry.get_modules()
+        for module in loaded_modules:
+            module_path = module.module_path
+            resource_load_dir = Path(module_path) / "resources"
+            if resource_load_dir.exists() and resource_load_dir.is_dir():
+                resources_dir.add(resource_load_dir)
+
+        #TODO GLOBAL RESOURCES
+
+        #LOAD
+        for resource_dir in resources_dir:
+            for entry in resource_dir.iterdir():
+                if not entry.is_dir():
+                    continue
+
+                if not (entry / "__init__.py").exists():
+                    continue
+
+                resource_file = entry / "resource.py"
+                if not resource_file.exists():
+                    continue
+
+                mod = import_python_module(resource_file)
+                if not mod:
+                    continue
+
+                for attr in dir(mod):
+                    obj = getattr(mod, attr)
+                    if isinstance(obj, type) and issubclass(obj, BaseResource) and obj is not BaseResource:
+                        ResourceRegistry.register(obj, self.router)
+
+    

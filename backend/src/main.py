@@ -34,11 +34,8 @@ def set_parser():
 def app_factory() -> FastAPI:
 
     app = App()
-    app.init_fastapi()
 
-    app.load_modules()
-    ModuleRegistry.debug_modules_()
-    app.add_router()
+    app.load()
 
 
     return app.fastapi_app
