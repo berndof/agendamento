@@ -8,6 +8,13 @@ services:
     ports:
       - "${BACKEND_LISTEN_PORT:-9090}:9090"
 
+    healthcheck:
+      test: ["CMD", "/backend/src/scripts/healthcheck.sh"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+
     depends_on:
       postgres:
         condition: service_healthy

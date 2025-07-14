@@ -7,7 +7,7 @@ COMPOSE_WATCH := docker compose -f docker-compose.yml -f docker-compose.watch.ym
 COMPOSE_PROD := docker compose -f docker-compose.yml -f docker-compose.prod.yml --env-file $(ENV_FILE_PROD)
 
 # === Targets padrão ===
-.PHONY: help watch up-services run dev down prod-up logs clean
+.PHONY: help watch up-services run dev down prod-up logs clean nuke
 
 # === Ajuda ===
 help:
@@ -21,17 +21,33 @@ help:
 	@echo "  make prod-up      → Sobe ambiente de produção com build"
 	@echo "  make logs         → Mostra logs do container da FastAPI"
 	@echo "  make clean        → Limpa containers, redes e volumes"
+	@echo "  make nuke         → Apaga tudo: containers, volumes e imagens de build ! USE WITH CAUTION !"
 
 # === Ambiente de Desenvolvimento ===
 watch:
 	@$(MAKE) down
 	@$(COMPOSE_WATCH) build
 	@echo "Iniciando Watch Mode ..."
-	@$(COMPOSE_WATCH) watch & \
-	PID=$$!; \
-	sleep 2; \
-	docker logs -f chimera_backend; \
-	kill $$PID
+	@bash -c '\
+		$(COMPOSE_WATCH) watch & \
+		WATCH_PID=$$!; \
+		echo "⏳ Aguardando o container chimera_backend iniciar..."; \
+		SPIN="|/-\\"; i=0; \
+		while ! docker inspect -f "{{.State.Health.Status}}" chimera_backend 2>/dev/null | grep healthy > /dev/null; do \
+			i=$$(( (i+1) % 4 )); \
+			printf "\r⏳ Aguardando healtchcheck da api... %s" "$${SPIN:$$i:1}"; \
+			sleep 0.2; \
+		done; \
+		printf "\r%*s\r" 80 ""; \
+		echo "✅ Container saudável. Exibindo logs..."; \
+		docker logs -f chimera_backend & \
+		LOGS_PID=$$!; \
+		trap "echo 'Encerrando...'; echo ''; kill $$WATCH_PID $$LOGS_PID; exit 0" SIGINT; \
+		wait $$LOGS_PID; \
+		kill $$WATCH_PID; \
+	'
+
+
 
 up-services:
 	@$(MAKE) down
@@ -56,6 +72,12 @@ clean:
 	@docker compose down --volumes --remove-orphans || echo "⚠️  Nenhum container ativo."
 	@docker volume rm $(docker volume ls -qf dangling=true) 2>/dev/null || true
 # === Ambiente de Produção ===
+
+nuke:
+	@echo "💣 Apagando tudo: containers, volumes e imagens de build..."
+	@docker compose down --volumes --remove-orphans || true
+	@docker volume prune -f
+	@docker image prune -f
 
 prod-up:
 	@$(COMPOSE_PROD) up --build -d

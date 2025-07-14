@@ -4,6 +4,7 @@ from pathlib import Path
 
 from fastapi import APIRouter, FastAPI
 
+from app import healthcheck
 from base.app_module import AppModule
 from base.model import BaseModel
 from base.resource import BaseResource
@@ -89,8 +90,13 @@ class ResourceRegistry:
 class App():
     def __init__(self,) -> None:
         self.init_fastapi()
-
     def add_router(self):
+
+        #TODO REFACTOR
+        #add health check route
+        self.router.include_router(healthcheck.router)
+
+        
         self.fastapi_app.include_router(self.router)
         return
 
