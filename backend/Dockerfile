@@ -10,10 +10,10 @@ ENV UV_LINK_MODE=copy
 
 #instala dependências
 COPY pyproject.toml uv.lock ./
+COPY src/ /backend/src
+
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen
-
-COPY src/ /backend/src
 
 RUN chmod +x scripts/*.sh || true
 

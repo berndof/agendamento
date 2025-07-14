@@ -9,7 +9,6 @@ from dotenv import load_dotenv
 from fastapi import FastAPI
 
 from app import App
-from app.app import ModuleRegistry
 from helpers.logs import setup_logs
 
 load_dotenv()
@@ -17,6 +16,7 @@ setup_logs()
 
 logger = logging.getLogger(__name__)
 
+#teste
 def set_parser():
     parser = argparse.ArgumentParser(description="Run fastapi server")
 
@@ -25,7 +25,7 @@ def set_parser():
         action="store_true",
         help="Reload on file changes",
     )
-    
+    #ts
     args = parser.parse_args()
 
     return args

@@ -6,9 +6,50 @@ readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "alembic>=1.16.2",
+    "asyncpg>=0.30.0",
     "fastapi[standard]>=0.115.13",
     "python-dotenv>=1.1.0",
     "redis>=6.2.0",
     "sqlalchemy>=2.0.41",
     "uvicorn>=0.34.3",
 ]
+
+[project.scripts]
+chimera = "cli.__main__:main"
+
+[tool.uv]
+package = true
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+include = ["cli*"]
+
+[tool.mypy]
+strict = true
+files = ["src/app/**/*.py"]
+plugins = ["pydantic.mypy"]
+
+show_error_context = true
+show_error_codes = true
+pretty = true
+
+ignore_missing_imports = true
+follow_iports = "normal"
+
+disallow_untyped_defs = false
+warn_unused_ignores = true
+
+[tool.ruff]
+include = ["src/app/**/*.py"]
+exclude = [
+    "__pypackages__",
+    ".mypy_cache",
+    ".git",
+    ".direnv",
+    ".venv",
+]
+
+line-length = 88
+indent-width = 4

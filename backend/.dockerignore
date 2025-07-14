@@ -7,4 +7,6 @@ __pycache__/
 .venv/
 .dockerignore
 Dockerfile
-docker-compose.yml
+docker-*
+.git/
+*.egg-info

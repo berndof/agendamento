@@ -1,0 +1,19 @@
+services:
+
+  backend:
+    volumes:
+      - ./src:/backend/src
+      - /backend/src/scripts #protege o remoto
+      - /backend/src/cli #protege o remoto
+      - /backend/src/migrations #protege o remoto
+      
+
+    command: ["/backend/src/scripts/dev.sh"]
+
+  postgres:
+    ports:
+      - "5432:5432"
+ 
+  redis:
+    ports:
+      - "6379:6379"

@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 def get_database_url() -> str:
     db_data: dict[str, str] = {
-        "host": "postgres",
+        "host": os.getenv("POSTGRES_HOST", "postgres"),
         "port": "5432",
         "user": os.getenv("POSTGRES_USER", ""),
         "password": os.getenv("POSTGRES_PASSWORD", ""),
