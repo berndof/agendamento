@@ -31,14 +31,14 @@ watch:
 	@bash -c '\
 		$(COMPOSE_WATCH) watch & \
 		WATCH_PID=$$!; \
-		echo "⏳ Aguardando o container chimera_backend iniciar..."; \
+		echo "⏳ Aguardando o container iniciar..."; \
 		SPIN="|/-\\"; i=0; \
 		while ! docker inspect -f "{{.State.Health.Status}}" chimera_backend 2>/dev/null | grep healthy > /dev/null; do \
 			i=$$(( (i+1) % 4 )); \
-			printf "\r⏳ Aguardando healtchcheck da api... %s" "$${SPIN:$$i:1}"; \
+			printf "\r⏳ Aguardando healtchcheck %s" "$${SPIN:$$i:1}"; \
 			sleep 0.2; \
 		done; \
-		printf "\r%*s\r" 80 ""; \
+		printf "\r%*s\r" 90 ""; \
 		echo "✅ Container saudável. Exibindo logs..."; \
 		docker logs -f chimera_backend & \
 		LOGS_PID=$$!; \

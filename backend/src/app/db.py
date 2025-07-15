@@ -44,9 +44,9 @@ class Database:
                 yield session
                 await session.commit()
             except Exception as e:
-                logger.error(f"Error in session: {e}")
+                #logger.error(f"Error in session: {e}")
                 await session.rollback()
-                raise
+                raise e
 
 db = Database(get_database_url())
 
@@ -59,7 +59,6 @@ async def get_db_session():
     async with db.session() as session:
         yield session
         
-
 async def get_redis() -> Redis:
     #TODO
     redis_client: Redis = Redis(
