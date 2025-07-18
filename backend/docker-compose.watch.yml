@@ -29,6 +29,15 @@ services:
           path: ./pyproject.toml
           target: /backend/pyproject.toml
 
+        - action: rebuild
+          path: ./.env.dev
+          
+        - action: rebuild
+          path: ./.env
+
+        - action: rebuild
+          path: ./Dockerfile
+
     command: ["/backend/src/scripts/watch.sh"]
 
   postgres:

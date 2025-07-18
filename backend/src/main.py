@@ -2,6 +2,7 @@
 import argparse
 import asyncio
 import logging
+import os
 
 import uvicorn
 import uvloop
@@ -14,9 +15,6 @@ from helpers.logs import setup_logs
 load_dotenv()
 setup_logs()
 
-logger = logging.getLogger(__name__)
-
-#teste
 def set_parser():
     parser = argparse.ArgumentParser(description="Run fastapi server")
 
@@ -25,7 +23,7 @@ def set_parser():
         action="store_true",
         help="Reload on file changes",
     )
-    #ts
+
     args = parser.parse_args()
 
     return args
@@ -34,9 +32,7 @@ def set_parser():
 def app_factory() -> FastAPI:
 
     app = App()
-
     app.load()
-
 
     return app.fastapi_app
 
@@ -45,6 +41,9 @@ def main() -> None:
     args = set_parser()
 
     asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
+
+    logger = logging.getLogger("app.main")
+    logger.debug("env vars: %s", os.environ)
     uvicorn.run(
         app="main:app_factory",
         host="0.0.0.0",

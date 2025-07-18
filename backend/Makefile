@@ -24,7 +24,7 @@ help:
 	@echo "  make nuke         → Apaga tudo: containers, volumes e imagens de build ! USE WITH CAUTION !"
 
 # === Ambiente de Desenvolvimento ===
-watch:
+watch_old:
 	@$(MAKE) down
 	@$(COMPOSE_WATCH) build
 	@echo "Iniciando Watch Mode ..."
@@ -46,7 +46,19 @@ watch:
 		wait $$LOGS_PID; \
 		kill $$WATCH_PID; \
 	'
-
+watch:
+	@$(MAKE) down
+	@$(COMPOSE_WATCH) build
+	@echo "Iniciando Watch Mode ..."
+	@bash -c '\
+		trap "echo '\''Encerrando...'\''; exit 0" SIGINT; \
+		while true; do \
+			echo "� Iniciando docker compose watch..."; \
+			$(COMPOSE_WATCH) watch; \
+			echo "� Watch finalizado. Reiniciando em 2s..."; \
+			sleep 2; \
+		done \
+	'
 
 
 up-services:

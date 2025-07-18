@@ -20,23 +20,20 @@ class RedisRepository:
         redis: Redis,
         expiration: int = 3600
     ) -> BaseRedisSchema:
-        try:
+        
             json_value = json.dumps(value)
             await redis.set(name=key, value=json_value, ex=expiration)
             result = BaseRedisSchema(key=key, value=json_value, expiration=expiration)
             return result
-        except Exception as e:
-            raise e
+
 
     @staticmethod
     async def redis_get_json_or_none(key: str, redis: Redis) -> str | None:
-        try:
-            result = await redis.get(key)
-            if result is None:
-                return None
-            return str(result)
-        except Exception as e:
-            raise e
+        result = await redis.get(key)
+        if result is None:
+            return None
+        return str(result)
+
 
 class BaseRepository(RedisRepository):
 
@@ -45,13 +42,11 @@ class BaseRepository(RedisRepository):
         obj: T,
         db_session: AsyncSession
     ) -> T:
-        try:
-            db_session.add(obj)
-            await db_session.flush()
-            await db_session.refresh(obj)
-            return obj
-        except Exception as e:
-            raise e
+        db_session.add(obj)
+        await db_session.flush()
+        await db_session.refresh(obj)
+        return obj
+
 
     @staticmethod
     async def run_query(

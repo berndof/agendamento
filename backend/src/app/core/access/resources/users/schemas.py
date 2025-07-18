@@ -58,7 +58,6 @@ class UserResponse(UserBase):
     status: UserStatusSchema
     created_at: str
 
-
 class UserSessionData(UserBase):
     ...
 

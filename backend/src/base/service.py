@@ -50,17 +50,6 @@ class BaseService:
     def __repr__(self) -> str:
         return f"<{self.__class__.__name__}>"
 
-class GenericService(BaseService ,Generic[T]):
-    model: type[T] = None
-
-    def __init__(self, db_session: AsyncSession | None = None, redis: Redis | None = None, *args, **kwargs):
-        kwargs_super = {}
-        if db_session is not None:
-            kwargs_super["_db_session"] = db_session
-        if redis is not None:
-            kwargs_super["_redis"] = redis
-        super().__init__(*args, **kwargs, **kwargs_super)
-
     def _handle_integrity_error(self, ie:IntegrityError) -> HTTPException:
         detail = str(ie.orig)
 
@@ -75,15 +64,38 @@ class GenericService(BaseService ,Generic[T]):
         errors = {field: "already exists" for field in fields}
         return HTTPException(status_code=400, detail=errors)
 
+    def _handle_exception(self, e: Exception) -> HTTPException:
+        self.logger.exception(e)
+        return HTTPException(status_code=500, detail=str(e))
+
+class GenericService(BaseService ,Generic[T]):
+    model: type[T] = None
+
+    def __init__(self, db_session: AsyncSession | None = None, redis: Redis | None = None, *args, **kwargs):
+        kwargs_super = {}
+        if db_session is not None:
+            kwargs_super["_db_session"] = db_session
+        if redis is not None:
+            kwargs_super["_redis"] = redis
+        super().__init__(*args, **kwargs, **kwargs_super)
+
     async def create(self, new_data: BaseSchema) -> T:
         try:
             new_obj = self.model(**new_data.model_dump())
             new_obj = await BaseRepository.save(new_obj, db_session=self.db_session)
+
+            #post create hook
+            await self.post_create(new_obj)
+            
             return new_obj
         except IntegrityError as ie:
             raise self._handle_integrity_error(ie)
         except Exception as e:
-            raise e
+            raise self._handle_exception(e)
+
+    async def post_create(self, obj: T):
+        """Hook opcional chamado após criar um objeto. Deve ser sobrescrito nas subclasses."""
+        pass
 
     async def get_or_create(self, new_data: Any, **kwargs:Any) -> tuple[T, bool]:
         try:

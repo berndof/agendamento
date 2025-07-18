@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from fastapi.security import OAuth2PasswordBearer
 
-from app.core.access.resources.users.schemas import UserSessionData
+from app.core.access.resources.users.schemas import UserCreate, UserSessionData
 from base.schemas import BaseSchema
 
-OauthSchema = OAuth2PasswordBearer(tokenUrl="/access/user/session/get-token")
+OauthPasswordSchema = OAuth2PasswordBearer(tokenUrl="/access/user/session/get-token")
 
 class Token(BaseSchema):
     access_token: str
@@ -23,3 +23,11 @@ class UserSessionCache(BaseSchema):
     user_session_data: "UserSessionData"
     sid: str
 
+class UserRegisterSchema(BaseSchema):
+    user_data: "UserCreate"
+
+class UserRegisterResponse(BaseSchema):
+    message: str
+    
+    
+UserRegisterSchema.model_rebuild()

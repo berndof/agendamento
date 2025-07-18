@@ -62,7 +62,7 @@ async def get_db_session():
 async def get_redis() -> Redis:
     #TODO
     redis_client: Redis = Redis(
-        host="localhost",  # ou configuração da sua app
+        host="192.168.100.6",  # ou configuração da sua app
         port=6379,
         decode_responses=True  # importante se quiser strings em vez de bytes
     )
