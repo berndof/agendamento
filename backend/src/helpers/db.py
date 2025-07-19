@@ -1,9 +1,6 @@
 import logging
 import os
 
-from dotenv import load_dotenv
-
-load_dotenv()
 logger = logging.getLogger(__name__)
 
 def get_database_url() -> str:

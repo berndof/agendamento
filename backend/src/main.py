@@ -6,13 +6,11 @@ import os
 
 import uvicorn
 import uvloop
-from dotenv import load_dotenv
 from fastapi import FastAPI
 
 from app import App
 from helpers.logs import setup_logs
 
-load_dotenv()
 setup_logs()
 
 def set_parser():
@@ -42,8 +40,8 @@ def main() -> None:
 
     asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
 
-    logger = logging.getLogger("app.main")
-    logger.debug("env vars: %s", os.environ)
+    _logger = logging.getLogger("app.main")
+    
     uvicorn.run(
         app="main:app_factory",
         host="0.0.0.0",

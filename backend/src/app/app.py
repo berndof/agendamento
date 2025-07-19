@@ -1,4 +1,5 @@
 import logging
+import os
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -90,6 +91,8 @@ class ResourceRegistry:
 class App():
     def __init__(self,) -> None:
         self.init_fastapi()
+
+        
     def add_router(self):
 
         #TODO REFACTOR

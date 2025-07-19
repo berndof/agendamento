@@ -1,65 +1,36 @@
-# === Variáveis de ambiente ===
-ENV_FILE_DEV := .env.dev
-ENV_FILE_PROD := .env.prod
+# === Arquivos de Compose ===
+COMPOSE_DEV := docker compose -f docker-compose.yml -f docker-compose.dev.yml
+COMPOSE_PROD := docker compose -f docker-compose.yml -f docker-compose.prod.yml
 
-COMPOSE_DEV := docker compose -f docker-compose.yml -f docker-compose.dev.yml --env-file $(ENV_FILE_DEV)
-COMPOSE_WATCH := docker compose -f docker-compose.yml -f docker-compose.watch.yml --env-file $(ENV_FILE_DEV)
-COMPOSE_PROD := docker compose -f docker-compose.yml -f docker-compose.prod.yml --env-file $(ENV_FILE_PROD)
-
-# === Targets padrão ===
-.PHONY: help watch up-services run dev down prod-up logs clean nuke
+# === Targets ===
+.PHONY: help install up-services run dev run-dev down prod-up logs clean nuke
 
 # === Ajuda ===
 help:
-	@echo "Targets disponíveis:"
 	@echo ""
-	@echo "  make watch        → Roda o FastAPI em container com watch mode"
-	@echo "  make up-services  → Sobe somente serviços (Postgres, Redis)"
-	@echo "  make run          → Sobe serviços e roda FastAPI local"
-	@echo "  make dev          → Sobe ambiente de desenvolvimento com bind mount do src/ ideal para desenvolver em app/"
-	@echo "  make down         → Derruba todos os containers do ambiente"
-	@echo "  make prod-up      → Sobe ambiente de produção com build"
-	@echo "  make logs         → Mostra logs do container da FastAPI"
-	@echo "  make clean        → Limpa containers, redes e volumes"
-	@echo "  make nuke         → Apaga tudo: containers, volumes e imagens de build ! USE WITH CAUTION !"
+	@echo "🚀 Comandos disponíveis:"
+	@echo ""
+	@echo "  make install      → Prepara o ambiente local (.env.app, dependências, permissões)"
+	@echo "  make up-services  → Sobe somente serviços auxiliares (Postgres, Redis) em modo dev"
+	@echo "  make run          → Sobe serviços e roda o app FastAPI localmente via script"
+	@echo "  make dev          → Sobe ambiente de desenvolvimento (tudo em segundo plano)"
+	@echo "  make run-dev      → Sobe ambiente com build + foreground (modo watch ou debug)"
+	@echo "  make down         → Derruba todos os containers do ambiente atual"
+	@echo "  make prod-up      → Sobe ambiente de produção com build e detach"
+	@echo "  make logs         → Mostra logs do container da FastAPI em tempo real"
+	@echo "  make clean        → Limpa containers, redes e volumes nomeados"
+	@echo "  make nuke         → Apaga tudo: containers, volumes e imagens de build"
+	@echo ""
 
-# === Ambiente de Desenvolvimento ===
-watch_old:
-	@$(MAKE) down
-	@$(COMPOSE_WATCH) build
-	@echo "Iniciando Watch Mode ..."
-	@bash -c '\
-		$(COMPOSE_WATCH) watch & \
-		WATCH_PID=$$!; \
-		echo "⏳ Aguardando o container iniciar..."; \
-		SPIN="|/-\\"; i=0; \
-		while ! docker inspect -f "{{.State.Health.Status}}" chimera_backend 2>/dev/null | grep healthy > /dev/null; do \
-			i=$$(( (i+1) % 4 )); \
-			printf "\r⏳ Aguardando healtchcheck %s" "$${SPIN:$$i:1}"; \
-			sleep 0.2; \
-		done; \
-		printf "\r%*s\r" 90 ""; \
-		echo "✅ Container saudável. Exibindo logs..."; \
-		docker logs -f chimera_backend & \
-		LOGS_PID=$$!; \
-		trap "echo 'Encerrando...'; echo ''; kill $$WATCH_PID $$LOGS_PID; exit 0" SIGINT; \
-		wait $$LOGS_PID; \
-		kill $$WATCH_PID; \
-	'
-watch:
-	@$(MAKE) down
-	@$(COMPOSE_WATCH) build
-	@echo "Iniciando Watch Mode ..."
-	@bash -c '\
-		trap "echo '\''Encerrando...'\''; exit 0" SIGINT; \
-		while true; do \
-			echo "� Iniciando docker compose watch..."; \
-			$(COMPOSE_WATCH) watch; \
-			echo "� Watch finalizado. Reiniciando em 2s..."; \
-			sleep 2; \
-		done \
-	'
+# === Inicialização ===
 
+install:
+	@echo "📦 Instalando dependências do projeto..."
+	@uv sync
+	@chmod +x ./src/scripts/run.sh || true
+	@echo "✅ Ambiente preparado."
+
+# === Desenvolvimento ===
 
 up-services:
 	@$(MAKE) down
@@ -70,26 +41,21 @@ run:
 	@./src/scripts/run.sh
 
 dev:
-	@$(MAKE) down
-	@$(COMPOSE_DEV) up -d
+	@$(COMPOSE_DEV) up -d --build
 
+run-dev:
+	@$(COMPOSE_DEV) up --build
 
 down:
-	@echo "Derrubando containers (se existirem)..."
+	@echo "🛑 Derrubando containers (se existirem)..."
 	@docker compose down --remove-orphans || echo "⚠️  Nenhum container ativo ou erro ignorado."
-
 
 clean:
 	@echo "🧹 Limpando containers, redes e volumes nomeados..."
 	@docker compose down --volumes --remove-orphans || echo "⚠️  Nenhum container ativo."
-	@docker volume rm $(docker volume ls -qf dangling=true) 2>/dev/null || true
-# === Ambiente de Produção ===
+	@docker volume rm $$(docker volume ls -qf dangling=true) 2>/dev/null || true
 
-nuke:
-	@echo "💣 Apagando tudo: containers, volumes e imagens de build..."
-	@docker compose down --volumes --remove-orphans || true
-	@docker volume prune -f
-	@docker image prune -f
+# === Produção ===
 
 prod-up:
 	@$(COMPOSE_PROD) up --build -d

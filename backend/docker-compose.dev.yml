@@ -1,16 +1,51 @@
 services:
 
   backend:
-    volumes:
-      - ./src:/backend/src
-      - /backend/src/scripts #protege o remoto
-      - /backend/src/cli #protege o remoto
-      - /backend/src/migrations #protege o remoto
-      
+    #volumes:
+    #  - ./src:/backend/src
+    # - /backend/src/scripts #protege o remoto
+    #  - /backend/src/cli #protege o remoto
+    #  - /backend/src/migrations #protege o remoto
+    env_file:
+      - .env.dev
 
     command: ["/backend/src/scripts/dev.sh"]
+    develop:
+      watch:
+        # sincroniza todo o src para dentro do container
+        - action: sync
+          path: ./src
+          target: /backend/src
+          #ignore:
+          #  - "src/app/"                  # ignora todo o diretório src/app
+          #  - "src/app/**"               # garante recursão
+
+        #reinicia o container se alguma config mudar
+        - action: sync+restart
+          path: ./src/config.py
+          target: /backend/src/config.py
+
+          # reinicia o container se o main mudar
+        - action: sync+restart
+          path: ./src/main.py
+          target: /backend/src/main.py
+
+        - action: sync+restart
+          path: ./src/scripts
+          target: /backend/src/scripts
+
+        - action: rebuild
+          path: ./pyproject.toml
+
+        - action: rebuild
+          path: ./.env.dev
+
+        - action: rebuild
+          path: ./Dockerfile
 
   postgres:
+    env_file:
+      - .env.dev
     ports:
       - "5432:5432"
  
